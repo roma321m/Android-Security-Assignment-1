@@ -1,40 +1,48 @@
-package com.roman.androidsecurityassignment1
+package com.roman.androidsecurityassignment1.view
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
+import com.roman.androidsecurityassignment1.util.RequestState
+import com.roman.androidsecurityassignment1.viewModel.MainViewModel
 
 
-@ExperimentalPermissionsApi
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AskForPermissions(
     mainViewModel: MainViewModel,
     multiplePermissionsState: MultiplePermissionsState
 ) {
-    if (multiplePermissionsState.shouldShowRationale.not() && mainViewModel.afterRationale) {
-        AskWithSettings(mainViewModel = mainViewModel)
-    } else {
-        AskWithRequest(
-            mainViewModel = mainViewModel,
-            multiplePermissionsState = multiplePermissionsState
-        )
+    val permissionsState by mainViewModel.permissionState.collectAsState()
+
+    if (permissionsState is RequestState.Success) {
+        if (multiplePermissionsState.shouldShowRationale.not() && (permissionsState as RequestState.Success<Boolean>).data) {
+            AskWithSettings()
+        } else {
+            AskWithRequest(
+                mainViewModel = mainViewModel,
+                multiplePermissionsState = multiplePermissionsState
+            )
+        }
     }
 }
 
 @Composable
-fun AskWithSettings(
-    mainViewModel: MainViewModel
-) {
+fun AskWithSettings() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -42,21 +50,26 @@ fun AskWithSettings(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        val context = LocalContext.current
         Text(text = "This application cannot work without all the permissions!\nPlease allow all the permissions manually")
         Spacer(modifier = Modifier.height(8.dp))
-        val context = LocalContext.current
-        Button(onClick = {
-            mainViewModel.updateAfterRationale(false)
-            // Fixme - open settings here
-//            val intent = Intent(ACTION_APPLICATION_DETAILS_SETTINGS)
-//            context.startActivity(intent)
-        }) {
+        Button(
+            onClick = {
+                ContextCompat.startActivity(
+                    context,
+                    Intent(
+                        ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", "com.roman.androidsecurityassignment1", null)
+                    ), null
+                )
+            }
+        ) {
             Text("Open Settings")
         }
     }
 }
 
-@ExperimentalPermissionsApi
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AskWithRequest(
     mainViewModel: MainViewModel,
@@ -83,7 +96,7 @@ fun AskWithRequest(
     }
 }
 
-@ExperimentalPermissionsApi
+@OptIn(ExperimentalPermissionsApi::class)
 private fun getTextToShowGivenPermissions(
     mainViewModel: MainViewModel,
     permissions: List<PermissionState>,
@@ -110,15 +123,17 @@ private fun getTextToShowGivenPermissions(
             }
         }
     }
-    textToShow.append(if (shouldShowRationale) {
-        "\n\n(Rationale): "
-    }else {
-        "\n\n"
-    })
+    textToShow.append(
+        if (shouldShowRationale) {
+            "\n\n(Rationale): "
+        } else {
+            "\n\n"
+        }
+    )
     textToShow.append(if (revokedPermissionsSize == 1) "Permission is" else "Permissions are")
     textToShow.append(
         if (shouldShowRationale) {
-            mainViewModel.updateAfterRationale(true)
+            mainViewModel.persistPermissionState(true)
             " important. Please grant all of them for the app to function properly."
         } else {
             " not granted.\nThe app cannot function without them."

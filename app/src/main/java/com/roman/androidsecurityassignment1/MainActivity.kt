@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.roman.androidsecurityassignment1.ui.theme.AndroidSecurityAssignment1Theme
+import com.roman.androidsecurityassignment1.view.MainScreen
+import com.roman.androidsecurityassignment1.viewModel.MainViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     companion object {
@@ -20,7 +23,6 @@ class MainActivity : ComponentActivity() {
 
     private val mainViewModel: MainViewModel by viewModels()
 
-    @ExperimentalPermissionsApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -28,7 +30,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AndroidSecurityAssignment1Theme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colors.background
+                ) {
                     MainScreen(mainViewModel)
                 }
             }
